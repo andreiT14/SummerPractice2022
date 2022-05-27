@@ -14,17 +14,17 @@ module FreqDivider(
     reg[31:0] CountFreqDiv;
 
 
-    assign ClkOutput = Enable && (FrequenceDivTarget == 1'b1 ? Clk : CountFreqDiv < (FrequenceDivTarget >> 1) ? 1'b1: 1'b0);
+    assign ClkOutput = Enable && (FrequenceDivTarget == 1'b1 ? Clk : CountFreqDiv <= (FrequenceDivTarget >> 1) ? 1'b1: 1'b0);
 
     //Configure Divider
     always @(posedge Clk, posedge Reset)begin
         if(Reset)begin
-            FrequenceDivTarget <= 32'h0;
+            FrequenceDivTarget <= 32'h1;
         end else if (Clk && ConfigDiv && !Enable) begin //Nu pot configura generatorul in timp ce functioneaza
-            if(FrequenceDivTarget > 1'b0)begin
+            if(Din > 1'b1)begin
                 FrequenceDivTarget <= Din;
             end else begin
-                FrequenceDivTarget <= 1'b0;
+                FrequenceDivTarget <= 1'b1;
             end
         end
     end
@@ -32,15 +32,16 @@ module FreqDivider(
     //Generare clock
     always @(posedge Clk, posedge Reset)begin
         if(Reset)begin
-            CountFreqDiv <= 0;
-        end else begin
+            CountFreqDiv <= 32'h1;
+        end else if (Clk) begin
             if (Enable) begin
-                CountFreqDiv <= CountFreqDiv + 1'b1;
-                if (CountFreqDiv == (FrequenceDivTarget - 1))begin
-                    CountFreqDiv <= 0;
+                if (CountFreqDiv == FrequenceDivTarget)begin
+                    CountFreqDiv <= 1;
+                end else if( CountFreqDiv < FrequenceDivTarget) begin
+                    CountFreqDiv <= CountFreqDiv + 1'b1;
                 end
             end else if (!Enable) begin
-                CountFreqDiv <= 32'h0;
+                CountFreqDiv <= 32'h1;
             end
         end
     end
