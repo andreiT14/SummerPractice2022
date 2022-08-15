@@ -5,7 +5,7 @@ module DFlipFlop(input Clk,
                  output Out);
 
     reg OutTmp;
-
+    
     assign Out = OutTmp;
 
     always @(posedge Clk, posedge Reset)begin

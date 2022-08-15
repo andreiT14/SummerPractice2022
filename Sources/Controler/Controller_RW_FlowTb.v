@@ -83,7 +83,7 @@ module Control_RW_FlowTb();
 
 
         //Generate write flow
-        /Generate a simple Read. MODE = 0;
+        //Generate a simple Read. MODE = 0;
         #30
       	$display("[%0t]: Generate Write Memory sequence. MODE = 1 ", $time);
       	ValidCmdTb <= 1;

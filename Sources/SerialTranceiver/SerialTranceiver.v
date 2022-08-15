@@ -1,4 +1,3 @@
-
 module SerialTranceiver(
     input Reset,
     input Clk,

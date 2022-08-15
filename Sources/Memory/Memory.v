@@ -22,6 +22,7 @@ module Memory#(parameter AddrSize = 8,
     always @(posedge Clk, posedge Reset)begin
         if(Reset) begin
             //Reset Memory
+            AccesMemLocation <= DataSize'h0;
             for(MemAddr = 0; MemAddr < (2 ** AddrSize); MemAddr = MemAddr + 1)begin
                 MemoryBank[MemAddr] <= {DataSize{1'b0}};
             end
