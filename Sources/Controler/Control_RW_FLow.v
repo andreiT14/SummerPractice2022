@@ -12,59 +12,66 @@ module Control_RW_Flow(input Clk,
                        output reg TransferData,
                        output reg Busy);
 
-    parameter Idle              = 2'b00;
-    parameter ReadMemory        = 2'b01,
-              SampleAndTransfer = 2'b10,
-              WriteMemory       = 2'b11;
+    localparam IDLE                 = 3'b000;
+    localparam READ_MEMORY          = 3'b001;
+    localparam SAMPLE_DATA          = 3'b010;
+    localparam TRANFER_DATA         = 3'b011;  
+    localparam WRITE_MEMORY         = 3'b100;
 
-    reg [1:0] ControllerCurrentState;
-    reg [1:0] ControllerNextState;
+    reg [2:0] ControllerCurrentState;
+    reg [2:0] ControllerNextState;
 
     //Generate Next State
+    //Generate NextState looking on : ValidCmd, RW, Active, Mode, TransferDone
     always @(ValidCmd, Active, Mode, RW, TransferDone, ControllerCurrentState)begin
-        case(ControllerCurrentState):
-            Idle: 
-                if( ValidCmd && Active && Mode && !RW && !TransferDone) begin
-                    ControllerNextState = ReadMemory;
-                end else if( ValidCmd && Active && !Mode && !TransferDone) begin
-                    ControllerNextState = SampleAndTransfer;
-                end else if( ValidCmd && Active && Mode && RW && !TransferDone )begin
-                    ControllerNextState = WriteMemory;
+        case(ControllerCurrentState)
+            IDLE:
+              if ( ValidCmd && !RW && Active && Mode && !TransferDone)begin
+                    ControllerNextState = READ_MEMORY;
+                end else if( ValidCmd && RW && Active && Mode) begin
+                    ControllerNextState = WRITE_MEMORY;
+                end else if ( ValidCmd && Active && !Mode && !TransferDone ) begin
+                    ControllerNextState = SAMPLE_DATA;
                 end else begin
-                    ControllerNextState = Idle;
+                    ControllerNextState = IDLE;
                 end
-            ReadMemory: 
-                if(Active && Mode && !TransferDone)begin
-                    ControllerNextState = SampleAndTransfer;
+
+            READ_MEMORY:
+                if ( Active && Mode && !TransferDone) begin
+                    ControllerNextState = SAMPLE_DATA;
                 end else begin
-                    ControllerNextState = Idle;
+                    ControllerNextState = IDLE;
                 end
-            SampleAndTransfer: 
-                if(Active && !TransferDone)begin
-                    ControllerNextState = SampleAndTransfer;
+
+            WRITE_MEMORY:
+                if(ValidCmd && RW && Active && Mode) begin
+                    ControllerNextState = WRITE_MEMORY;
+                end else begin
+                    ControllerNextState = IDLE;
+                end
+
+            SAMPLE_DATA:
+                if( Active && !TransferDone) begin
+                    ControllerNextState = TRANFER_DATA;
+                end
+
+            TRANFER_DATA: 
+                if(Active && !TransferDone) begin
+                    ControllerNextState = TRANFER_DATA;
                 end else if (Active && TransferDone)begin
-                    ControllerNextState = Idle;
+                    ControllerNextState = IDLE;
                 end else begin
-                    ControllerNextState = Idle;
+                    ControllerNextState = IDLE;
                 end
-            WriteMemory: 
-                if (ValidCmd && Active && Mode && RW && !TransferDone)begin
-                    ControllerNextState = WriteMemory;
-                end else if(Active && Mode && RW && !TransferDone)begin
-                    ControllerNextState = WriteMemory;
-                end else if(Active && Mode && !RW && !TransferDone)begin
-                    ControllerNextState = Idle;
-                end else begin
-                    ControllerNextState = Idle;
-                end
-            default: ControllerNextState = Idle;
+
+            default: ControllerNextState = IDLE;
         endcase
     end
 
     //Model Current State
     always @(posedge Clk, posedge Reset)begin
         if(Reset)begin
-            ControllerCurrentState <= Idle;
+            ControllerCurrentState <= IDLE;
         end else if(Clk)begin
             ControllerCurrentState <= ControllerNextState;
         end
@@ -72,12 +79,12 @@ module Control_RW_Flow(input Clk,
 
     //Model Output
     always @(ControllerCurrentState)begin
-        AccessMem    = ControllerCurrentState == ReadMemory ||
-                       ControllerCurrentState == WriteMemory       ? 1'b1 : 1'b0;
-        RWMem        = ControllerCurrentState == WriteMemory       ? 1'b1 : 1'b0;
-        SampleData   = ControllerCurrentState == SampleAndTransfer ? 1'b1 : 1'b0;
-        TransferData = ControllerCurrentState == SampleAndTransfer ? 1'b1 : 1'b0;
-        Busy         = ControllerCurrentState != Idle              ? 1'b1 : 1'b0;
+        AccessMem    = ControllerCurrentState == READ_MEMORY ||
+                       ControllerCurrentState == WRITE_MEMORY      ? 1'b1 : 1'b0;
+        RWMem        = ControllerCurrentState == WRITE_MEMORY      ? 1'b1 : 1'b0;
+        SampleData   = ControllerCurrentState == SAMPLE_DATA       ? 1'b1 : 1'b0;
+        TransferData = ControllerCurrentState == TRANFER_DATA      ? 1'b1 : 1'b0;
+        Busy         = ControllerCurrentState != IDLE              ? 1'b1 : 1'b0;
     end
 
     

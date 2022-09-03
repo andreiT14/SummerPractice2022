@@ -8,7 +8,7 @@ module SerialTranceiver(
     input ClkTx,
 
     output TxBusy,
-    output TxDone,
+    output reg TxDone,
     output DataOut //working at ClkTx
 );
 
@@ -17,11 +17,9 @@ module SerialTranceiver(
     reg TransferSerialInProgress;
     reg[31:0] CountDataBits;
 
-    assign TxBusy = CountDataBits <= 31 && (TransferData || TransferSerialInProgress);
+    assign TxBusy = CountDataBits <= 31 && TransferSerialInProgress;
 
-    assign TxDone = CountDataBits == 0 && TransferSerialInProgress;
-
-    assign DataOut = TransferSerialInProgress & DataInTmp[CountDataBits];
+    assign DataOut =   & DataInTmp[CountDataBits];
 
     always @(posedge Clk, posedge Reset)begin
         if(Reset)begin
@@ -37,6 +35,10 @@ module SerialTranceiver(
             end
             if(Clk && TransferData && CountDataBits == 32'b0)begin
                 TransferData <= 1'b0;
+                TxDone <= 1'b1;
+            end
+            if(TxDone)begin
+                TxDone <= 1'b0;
             end
         end
     end

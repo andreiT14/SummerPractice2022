@@ -11,7 +11,6 @@
     // 1. Combinational block: Generate Next State
     // 2. Memory Block: Memory the current state 
     // 3. Combinational block: Generate the output signal using current state
-`timescale 1ns/1ps
 module DecodificatorKey(input Clk,
                         input Reset,
                         input ValidCmd,

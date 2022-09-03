@@ -170,3 +170,19 @@ begin
 end
 
 endmodule
+
+module DFlipFlop(
+    input Clk,
+    input D,
+    input Q,
+    output QN);
+
+    reg qTmp;
+
+    assign Q = qTmp;
+    assign QN = ~qTmp;
+
+    always @(posedge Clk)begin
+        qTmp <= D;
+    end
+endmodule

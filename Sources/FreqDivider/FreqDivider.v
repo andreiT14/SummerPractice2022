@@ -1,6 +1,6 @@
 `timescale 1ns/1ps 
 
-module FreqDivider(
+module FrequencyDivider(
     input Reset,
     input Clk,
 

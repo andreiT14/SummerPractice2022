@@ -6,6 +6,7 @@ module concatenator (out,inA,inB,inC,inD,inE);
   input [WIDTH0-1:0] inA, inB,inC;
   input [WIDTH1-1:0] inD, inE;
   
-  assign out={inA,inB,inC,inD,inE};
+  assign out={inE,inD,inC,inB,inA};
+  
   
 endmodule

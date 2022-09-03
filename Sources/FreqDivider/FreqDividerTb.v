@@ -19,6 +19,9 @@ module FreqDividerTb();
                                 .ClkOutput(ClkOutputTb));
 
     initial begin
+      	$dumpfile("dump.vcd"); 
+      	$dumpvars;
+      
         ResetTb = 1;
         ClkTb = 0;
         DinTb = 32'h0;
@@ -36,7 +39,10 @@ module FreqDividerTb();
         #10
         EnableTb = 1;
         ConfigDivTb = 0;
+      
+      	#300;
+      	$finish;
     end
 
-    always #5 ClkTb <= ~ClkTb;
+    always #5 ClkTb =~ ClkTb;
 endmodule

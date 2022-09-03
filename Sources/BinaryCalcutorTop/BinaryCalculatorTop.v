@@ -1,3 +1,12 @@
+// Code your design here
+`include "Mux.v"
+`include "Memory.v"
+`include "Concatenator.v"
+`include "SerialTranceiver.v"
+`include "ControllerTop.v"
+`include "ALU.v"
+`include "FrequencyDivider.v"
+
 module BinaryCalculatorTop(
     input Clk,
     input Reset,
@@ -25,9 +34,6 @@ module BinaryCalculatorTop(
     output DataOut,
     output ClkTx);
 
-    //FIXME- Remove assing
-    assign ClkTx = Clk;
-
     wire ResetTmp;
 
     //Mux Operator A/Operator B/ Selector wires
@@ -44,7 +50,9 @@ module BinaryCalculatorTop(
 
     //Controller wires
     wire CtrlRWTmp;
+  	wire CtrlModeTmp;
     wire CtrlActiveTmp;
+  	wire CtrlBusyTmp;
     wire CtrlAccesMemTmp;
     wire CtrlRWMemTmp;
     wire CtrlSampleDataTmp;
@@ -56,23 +64,30 @@ module BinaryCalculatorTop(
     //Transceiver wires
     wire[31:0] TxDinTmp;
     wire TxTransferDone;
+  
+  	//Comtrol Tranceiver
+  	wire ClkTx;
     
     //Controll Calculator Reset
     assign ResetTmp = Reset & !CtrlActiveTmp;
-
-
+  
+  	assign CtrlRWTmp = RWMem & CtrlActiveTmp;
+  	assign CalcActive = CtrlActiveTmp;
+  	assign CalcMode   = CtrlModeTmp;
+  	assign CalcBusy   = CtrlBusyTmp;
+  
     //Control Operator A/ Operator B/ Selector
-    mux2to1 MuxInA_inst #(WIDTH = 8)(.out(MuxATmp),
+  	mux2to1 #(.WIDTH(8))MuxInA_inst(.out(MuxATmp),
                                      .d0(InA),
                                      .d1(8'h0),
                                      .sel(ResetTmp));
 
-    mux2to1 MuxInB_inst #(WIDTH = 8)(.out(MuxBTmp),
+  	mux2to1 #(.WIDTH(8))MuxInB_inst(.out(MuxBTmp),
                                      .d0(InB),
                                      .d1(8'h0),
                                      .sel(ResetTmp));
 
-    mux2to1 MuxSel_inst #(WIDTH = 4)(.out(MuxSelTmp),
+  	mux2to1 #(.WIDTH(4))MuxSel_inst(.out(MuxSelTmp),
                                      .d0(Sel),
                                      .d1(4'h0),
                                      .sel(ResetTmp));
@@ -80,12 +95,12 @@ module BinaryCalculatorTop(
 
     //Add ALU logic block
     m_alu Alu_inst(.A(MuxATmp),
-                   .B(MuxBTmp).
+                   .B(MuxBTmp),
                    .ALU_Sel(MuxSelTmp),
                    .ALU_Out(AluOutTmp),
                    .Flag(AluFlagsTmp));
 
-    assign CtrlRWTmp = RW & CtrlActive;
+    
 
     //Add controller
     Controller Controller_inst(.Clk(Clk),
@@ -94,9 +109,9 @@ module BinaryCalculatorTop(
                                .RW(CtrlRWTmp),
                                .InputKey(InputKey),
                                .TransferDone(TxTransferDone),
-                               .Busy(CalcBusy),
-                               .Active(CalcActive),
-                               .Mode(CalcMode),
+                               .Busy(CtrlBusyTmp),
+                               .Active(CtrlActiveTmp),
+                               .Mode(CtrlModeTmp),
                                .AccessMem(CtrlAccesMemTmp),
                                .RWMem(CtrlRWMemTmp),
                                .SampleData(CtrlSampleDataTmp),
@@ -104,38 +119,43 @@ module BinaryCalculatorTop(
 
 
     
-    concatenator Concatenator_inst #(WIDTH0 = 8, WIDTH1 = 4)(.out(ConcatenatorOutTmp),
+  	concatenator #(.WIDTH0(8), .WIDTH1(4))Concatenator_inst(.out(ConcatenatorOutTmp),
                                                             .inA(MuxATmp),
-                                                            .InB(MuxBTmp),
+                                                            .inB(MuxBTmp),
                                                             .inC(AluOutTmp),
                                                             .inD(MuxSelTmp),
                                                             .inE(AluFlagsTmp));
 
-    Memory Memory_inst #(AddrSize = 8, DataSize = 32)(.Clk(Clk),
+  	Memory  #(.AddrSize(8), .DataSize(32))Memory_inst(.Clk(Clk),
                                                       .Reset(ResetTmp),
                                                       .Din(ConcatenatorOutTmp),
                                                       .Addr(Addr),
-                                                      .Valid(CtrlActiveTmp),
+                                                      .Valid(CtrlAccesMemTmp),
                                                       .R_W(CtrlRWMemTmp),
                                                       .Dout(MemoryDoutTmp));
 
-    mux2to1 MuxTransceiver_inst#(WIDTH = 32 )(.out(TxDinTmp),
+  	mux2to1 #(.WIDTH(32))MuxTransceiver_inst(.out(TxDinTmp),
                                               .d0(ConcatenatorOutTmp),
                                               .d1(MemoryDoutTmp),
                                               .sel(CalcMode));
 
-    SerialTranceiver Registru_Shift_ParalelLoad_inst(.Clk(Clk),
-                                                     .Reset(Reset),
-                                                     .DataIn(TxDinTmp),
-                                                     .Sample(CtrlSampleDataTmp),
-                                                     .StartTx(CtrlTransferDataTmp),
-                                                     .ClkTx(Clk),
-                                                     .TxBusy(CalcBusy),
-                                                     .TxDone(TxTransferDone),
-                                                     .DataOut(DataOut));
+  SerialTranceiver Registru_Shift_ParalelLoad_inst(.Clk(Clk),
+                                                   .Reset(Reset),
+                                                   .DataIn(TxDinTmp),
+                                                   .Sample(CtrlSampleDataTmp),
+                                                   .StartTx(CtrlTransferDataTmp),
+                                                   .ClkTx(ClkTx),
+                                                   .TxBusy(DoutValid),
+                                                   .TxDone(TxTransferDone),
+                                                   .DataOut(DataOut));
 
 
-    //FIXME - Add frequency divider.
+  FrequencyDivider FrequencyDivider_inst(.Reset(ResetTmp),
+                                         .Clk(Clk),
+                                         .Din(Din),
+                                         .ConfigDiv(ConfigDiv),
+                                         .Enable(CtrlTransferDataTmp),
+                                         .ClkOutput(ClkTx));
     
 
 
