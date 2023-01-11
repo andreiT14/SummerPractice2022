@@ -1,3 +1,4 @@
+// Code your design here
 module SerialTranceiver(
     input Reset,
     input Clk,
@@ -17,23 +18,23 @@ module SerialTranceiver(
     reg TransferSerialInProgress;
     reg[31:0] CountDataBits;
 
-    assign TxBusy = CountDataBits <= 31 && TransferSerialInProgress;
+    assign TxBusy = TransferSerialInProgress;
 
-    assign DataOut =   & DataInTmp[CountDataBits];
+    assign DataOut = TransferSerialInProgress & DataInTmp[CountDataBits];
 
-    always @(posedge Clk, posedge Reset)begin
+    always @(negedge Clk, posedge Reset)begin
         if(Reset)begin
             //reset internal logic
             DataInTmp <= 32'b0;
             TransferData <= 0;
+          	TxDone <= 1'b0;
         end else begin
-            if(Clk && Sample && !TxBusy)begin
+            if(Sample && !TxBusy)begin
                 DataInTmp <= DataIn;
             end
-            if(Clk && StartTx && !TxBusy) begin
+            if(StartTx && !TxBusy) begin
                 TransferData <= 1'b1;
-            end
-            if(Clk && TransferData && CountDataBits == 32'b0)begin
+            end else if(TransferData && CountDataBits == 32'h0)begin
                 TransferData <= 1'b0;
                 TxDone <= 1'b1;
             end
@@ -55,7 +56,7 @@ module SerialTranceiver(
                 CountDataBits <= CountDataBits - 1; 
             end else if(ClkTx && TransferSerialInProgress && CountDataBits == 0)begin
                 TransferSerialInProgress <= 0;
-                CountDataBits <= 32'd31; 
+                CountDataBits <= 32'd31;
             end
         end
     end

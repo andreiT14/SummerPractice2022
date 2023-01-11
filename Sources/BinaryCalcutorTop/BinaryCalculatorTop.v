@@ -154,7 +154,7 @@ module BinaryCalculatorTop(
                                          .Clk(Clk),
                                          .Din(Din),
                                          .ConfigDiv(ConfigDiv),
-                                         .Enable(CtrlTransferDataTmp),
+                                         .Enable(CalcActive),
                                          .ClkOutput(ClkTx));
     
 

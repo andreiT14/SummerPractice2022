@@ -55,17 +55,21 @@ module m_alu(A, B, ALU_Sel, ALU_Out, Flag);
               ALU_Result = 8'h0;
               Flag[1]=1;
             end
-            else
+            else begin
               ALU_Result = A + B;
+              Flag[1]= 0;
+            end
           end 
         4'b0001: // Subtraction 
           begin
             if(A<B) begin
-            ALU_Result = 8'h0;
+              ALU_Result = 8'h0;
               Flag[3] = 1; //UF=1
             end
-            else
+            else begin
               ALU_Result = A - B ; 
+              Flag[3] = 0;
+            end
           end
         4'b0010: // Multiplication
           begin
@@ -73,8 +77,11 @@ module m_alu(A, B, ALU_Sel, ALU_Out, Flag);
               ALU_Result = 8'h0;
               Flag[2]=1;
             end
-            else
+            else begin
               ALU_Result = A * B;
+              Flag[2]=0;
+            end
+            
           end
         4'b0011: // Division
           begin
@@ -82,8 +89,10 @@ module m_alu(A, B, ALU_Sel, ALU_Out, Flag);
             ALU_Result = 8'h0;
               Flag[3] = 1; //UF=1
             end
-            else
-              ALU_Result = A / B ; 
+            else begin
+              ALU_Result = A / B;
+              Flag[3] = 0; //UF=1
+            end
           end
         4'b0100: // Logical shift left
           begin
@@ -121,8 +130,10 @@ module m_alu(A, B, ALU_Sel, ALU_Out, Flag);
             end
           default: begin ALU_Result = 8'h0 ; Flag = 4'h0; end
         endcase
-        if (!ALU_Result)
+      if (ALU_Result == 8'h0)
           Flag[0]=1; //ZF=1
+      else
+        Flag[0]=0;
     end
   
 endmodule
